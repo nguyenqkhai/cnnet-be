@@ -169,3 +169,4 @@ D:\cnnet\CourseWeb.API\obj\Debug\net9.0\CourseWeb.API.pdb
 D:\cnnet\CourseWeb.API\obj\Debug\net9.0\CourseWeb.API.genruntimeconfig.cache
 D:\cnnet\CourseWeb.API\obj\Debug\net9.0\ref\CourseWeb.API.dll
 D:\cnnet\CourseWeb.API\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+D:\cnnet\CourseWeb.API\obj\Debug\net9.0\CourseWeb.API.sourcelink.json
