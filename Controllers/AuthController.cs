@@ -83,16 +83,26 @@ namespace be_net.Controllers
                     return BadRequest("Email and password are required");
                 }
 
+                _logger.LogInformation($"Attempting login for email: {loginDto.Email}");
+
                 var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == loginDto.Email && !u.Destroy);
 
                 if (user == null)
+                {
+                    _logger.LogWarning($"Login failed: User not found for email {loginDto.Email}");
                     return Unauthorized("Invalid email or password");
+                }
 
+                _logger.LogInformation($"User found, verifying password for user ID: {user.Id}");
                 var passwordIsValid = _authService.VerifyPassword(user.Password, loginDto.Password);
 
                 if (!passwordIsValid)
+                {
+                    _logger.LogWarning($"Login failed: Invalid password for user ID {user.Id}");
                     return Unauthorized("Invalid email or password");
+                }
 
+                _logger.LogInformation($"Login successful for user ID: {user.Id}");
                 var token = _authService.GenerateJwtToken(user);
 
                 var userDto = new UserDto
@@ -151,37 +161,36 @@ namespace be_net.Controllers
             }
         }
 
-        // [HttpPost("reset-password")]
-        // [Authorize]
-        // public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
-        // {
-        //     try
-        //     {
-        //         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                
-        //         if (string.IsNullOrEmpty(userId))
-        //             return Unauthorized();
+        [HttpPost("reset-password-temp")]
+        public async Task<ActionResult> ResetPasswordTemp([FromBody] ResetPasswordTempDto resetDto)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(resetDto.Email) || string.IsNullOrEmpty(resetDto.NewPassword))
+                {
+                    return BadRequest("Email and new password are required");
+                }
 
-        //         var user = await _context.Users.FindAsync(long.Parse(userId));
+                var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == resetDto.Email && !u.Destroy);
 
-        //         if (user == null || user.Destroy)
-        //             return NotFound();
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
 
-        //         if (!_authService.VerifyPassword(user.Password, resetPasswordDto.CurrentPassword))
-        //             return BadRequest("Current password is incorrect");
+                // Hash password mới bằng thuật toán PBKDF2
+                user.Password = _authService.HashPassword(resetDto.NewPassword);
+                user.UpdatedAt = DateTime.Now;
 
-        //         user.Password = _authService.HashPassword(resetPasswordDto.NewPassword);
-        //         user.UpdatedAt = DateTime.Now;
+                await _context.SaveChangesAsync();
 
-        //         await _context.SaveChangesAsync();
-
-        //         return Ok(new { message = "Password updated successfully" });
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Error resetting password");
-        //         return StatusCode(500, "An error occurred. Please try again later.");
-        //     }
-        // }
+                return Ok(new { message = "Password has been reset successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resetting password");
+                return StatusCode(500, "An error occurred while resetting password");
+            }
+        }
     }
 }

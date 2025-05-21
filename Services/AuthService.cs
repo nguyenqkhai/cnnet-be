@@ -53,14 +53,17 @@ namespace be_net.Services
 
         public string HashPassword(string password)
         {
-            // Sử dụng HMACSHA256 thay vì HMACSHA512
-            using (var hmac = new HMACSHA256())
+            byte[] salt = new byte[32];
+            using (var rng = RandomNumberGenerator.Create())
             {
-                var salt = hmac.Key; // HMACSHA256 có salt 32 bytes
-                var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+                rng.GetBytes(salt);
+            }
 
-                // Kết hợp salt và hash
-                var hashBytes = new byte[salt.Length + hash.Length];
+            using (var hmac = new HMACSHA256(salt))
+            {
+                byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+                byte[] hashBytes = new byte[salt.Length + hash.Length];
                 Array.Copy(salt, 0, hashBytes, 0, salt.Length);
                 Array.Copy(hash, 0, hashBytes, salt.Length, hash.Length);
 
@@ -72,85 +75,34 @@ namespace be_net.Services
         {
             try
             {
-                var hashBytes = Convert.FromBase64String(hashedPassword);
-                
-                // Kiểm tra độ dài của chuỗi hash để xác định thuật toán
-                if (hashBytes.Length >= 128) // Có thể là HMACSHA512 (64 bytes salt + 64 bytes hash)
+                byte[] hashBytes = Convert.FromBase64String(hashedPassword);
+                if (hashBytes.Length < 64)
                 {
-                    return VerifyWithHMACSHA512(hashBytes, providedPassword);
-                }
-                else // Có thể là HMACSHA256 (32 bytes salt + 32 bytes hash)
-                {
-                    return VerifyWithHMACSHA256(hashBytes, providedPassword);
-                }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private bool VerifyWithHMACSHA256(byte[] hashBytes, string providedPassword)
-        {
-            try
-            {
-                // HMACSHA256 có salt 32 bytes
-                var salt = new byte[32];
-                if (hashBytes.Length < salt.Length)
+                    Console.WriteLine("Invalid hash length");
                     return false;
-                    
-                Array.Copy(hashBytes, 0, salt, 0, salt.Length);
-                
+                }
+
+                byte[] salt = new byte[32];
+                Array.Copy(hashBytes, 0, salt, 0, 32);
+                Console.WriteLine($"Salt length: {salt.Length}");
+
                 using (var hmac = new HMACSHA256(salt))
                 {
-                    var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(providedPassword));
-                    
-                    if (hashBytes.Length < salt.Length + computedHash.Length)
-                        return false;
-                        
-                    for (int i = 0; i < computedHash.Length; i++)
-                    {
-                        if (computedHash[i] != hashBytes[salt.Length + i])
-                            return false;
-                    }
-                    
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
+                    byte[] computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(providedPassword));
+                    Console.WriteLine($"Computed hash length: {computedHash.Length}");
 
-        private bool VerifyWithHMACSHA512(byte[] hashBytes, string providedPassword)
-        {
-            try
-            {
-                // HMACSHA512 có salt 64 bytes
-                var salt = new byte[64];
-                if (hashBytes.Length < salt.Length)
-                    return false;
-                    
-                Array.Copy(hashBytes, 0, salt, 0, salt.Length);
-                
-                using (var hmac = new HMACSHA512(salt))
-                {
-                    var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(providedPassword));
-                    
-                    if (hashBytes.Length < salt.Length + computedHash.Length)
-                        return false;
-                        
                     for (int i = 0; i < computedHash.Length; i++)
                     {
-                        if (computedHash[i] != hashBytes[salt.Length + i])
+                        if (computedHash[i] != hashBytes[32 + i])
+                        {
                             return false;
+                        }
                     }
-                    
+
                     return true;
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 return false;
             }
