@@ -16,7 +16,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Course Web API", Version = "v1" });
-    
+
     // Add JWT Authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -44,7 +44,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Add DB Context
-builder.Services.AddDbContext<CourseDBContext>(options => 
+builder.Services.AddDbContext<CourseDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CourseDB")));
 
 // Add CORS
@@ -66,7 +66,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                builder.Configuration.GetSection("JwtSettings:Secret").Value)),
+                builder.Configuration.GetSection("JwtSettings:Secret").Value ??
+                throw new InvalidOperationException("JWT Secret key is not configured"))),
             ValidateIssuer = false,
             ValidateAudience = false,
             ClockSkew = TimeSpan.Zero
@@ -82,6 +83,12 @@ builder.Services.AddAuthorization(options =>
 
 // Register services
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Register HttpClient for payment services
+builder.Services.AddHttpClient();
+
+// Configure static files for media uploads
+builder.Services.AddDirectoryBrowser();
 
 var app = builder.Build();
 

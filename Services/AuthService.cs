@@ -33,8 +33,9 @@ namespace be_net.Services
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                _configuration.GetSection("JwtSettings:Secret").Value));
+            var secretKey = _configuration.GetSection("JwtSettings:Secret").Value ??
+                throw new InvalidOperationException("JWT Secret key is not configured");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
 
@@ -102,7 +103,7 @@ namespace be_net.Services
                     return true;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }

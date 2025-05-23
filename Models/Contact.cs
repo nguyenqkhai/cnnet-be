@@ -13,6 +13,8 @@ public partial class Contact
 
     public string? Phone { get; set; }
 
+    public string Subject { get; set; } = null!;
+
     public string Message { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; }
