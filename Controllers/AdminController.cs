@@ -9,7 +9,7 @@ namespace be_net.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "admin")]
+    [Authorize(Policy = "RequireAdminRole")]
     public class AdminController : ControllerBase
     {
         private readonly CourseDBContext _context;
