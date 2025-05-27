@@ -1,0 +1,13 @@
+using LmsBackend.DTOs;
+
+namespace LmsBackend.Services
+{
+    public interface ILessonService
+    {
+        Task<List<LessonDto>> GetAllLessonsAsync();
+        Task<LessonDto> CreateLessonAsync(CreateLessonDto createLessonDto);
+        Task<List<LessonDto>> GetLessonsByCourseIdAsync(long courseId);
+        Task<LessonDto> UpdateLessonAsync(long id, UpdateLessonDto updateLessonDto);
+        Task<bool> DeleteLessonAsync(long id);
+    }
+}
