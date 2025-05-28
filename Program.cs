@@ -30,6 +30,10 @@ builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IWishlistService, WishlistService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+
+// Add HttpClient for payment services
+builder.Services.AddHttpClient();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");

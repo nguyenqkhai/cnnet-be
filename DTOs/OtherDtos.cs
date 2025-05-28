@@ -271,6 +271,7 @@ namespace LmsBackend.DTOs
         public string Description { get; set; } = string.Empty;
         public string ReturnUrl { get; set; } = string.Empty;
         public string NotifyUrl { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; } = string.Empty; // "momo" or "zalopay"
     }
 
     public class PaymentResponseDto
@@ -279,5 +280,74 @@ namespace LmsBackend.DTOs
         public string TransactionId { get; set; } = string.Empty;
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; } = string.Empty;
+        public long OrderId { get; set; }
+    }
+
+    public class MoMoPaymentRequestDto
+    {
+        public string PartnerCode { get; set; } = string.Empty;
+        public string RequestId { get; set; } = string.Empty;
+        public long Amount { get; set; }
+        public string OrderId { get; set; } = string.Empty;
+        public string OrderInfo { get; set; } = string.Empty;
+        public string RedirectUrl { get; set; } = string.Empty;
+        public string IpnUrl { get; set; } = string.Empty;
+        public string RequestType { get; set; } = "captureWallet";
+        public string ExtraData { get; set; } = string.Empty;
+        public string Lang { get; set; } = "vi";
+        public string Signature { get; set; } = string.Empty;
+    }
+
+    public class MoMoPaymentResponseDto
+    {
+        public string PartnerCode { get; set; } = string.Empty;
+        public string RequestId { get; set; } = string.Empty;
+        public string OrderId { get; set; } = string.Empty;
+        public long Amount { get; set; }
+        public long ResponseTime { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string ResultCode { get; set; } = string.Empty;
+        public string PayUrl { get; set; } = string.Empty;
+        public string DeepLink { get; set; } = string.Empty;
+        public string QrCodeUrl { get; set; } = string.Empty;
+    }
+
+    public class ZaloPayRequestDto
+    {
+        public int AppId { get; set; }
+        public string AppUser { get; set; } = string.Empty;
+        public long AppTime { get; set; }
+        public long Amount { get; set; }
+        public string AppTransId { get; set; } = string.Empty;
+        public string EmbedData { get; set; } = string.Empty;
+        public string Item { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string BankCode { get; set; } = string.Empty;
+        public string Mac { get; set; } = string.Empty;
+        public string CallbackUrl { get; set; } = string.Empty;
+    }
+
+    public class ZaloPayResponseDto
+    {
+        public int ReturnCode { get; set; }
+        public string ReturnMessage { get; set; } = string.Empty;
+        public string SubReturnCode { get; set; } = string.Empty;
+        public string SubReturnMessage { get; set; } = string.Empty;
+        public string ZpTransToken { get; set; } = string.Empty;
+        public string OrderUrl { get; set; } = string.Empty;
+        public string OrderToken { get; set; } = string.Empty;
+        public string AppTransId { get; set; } = string.Empty;
+    }
+
+    public class PaymentCallbackDto
+    {
+        public string OrderId { get; set; } = string.Empty;
+        public string TransactionId { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public long Amount { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public DateTime PaymentTime { get; set; }
     }
 }
