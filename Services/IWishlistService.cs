@@ -6,6 +6,7 @@ namespace LmsBackend.Services
     {
         Task<List<WishlistDto>> GetAllWishlistsAsync();
         Task<WishlistDto> CreateWishlistAsync(CreateWishlistDto createWishlistDto);
+        Task<WishlistDto> AddCourseToWishlistAsync(long userId, long courseId);
         Task<WishlistDto?> FindByUserAndCourseAsync(FindWishlistDto findWishlistDto);
         Task<bool> DeleteWishlistAsync(long id);
         Task<List<WishlistDto>> GetWishlistsByUserIdAsync(long userId);

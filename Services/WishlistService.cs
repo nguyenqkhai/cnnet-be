@@ -126,6 +126,82 @@ namespace LmsBackend.Services
             };
         }
 
+        public async Task<WishlistDto> AddCourseToWishlistAsync(long userId, long courseId)
+        {
+            // Kiểm tra xem khóa học đã tồn tại trong wishlist chưa
+            var existingWishlist = await _context.Wishlists
+                .FirstOrDefaultAsync(w => w.UserId == userId &&
+                                         w.CourseId == courseId &&
+                                         !w.Destroy);
+
+            if (existingWishlist != null)
+            {
+                throw new InvalidOperationException("Course already exists in wishlist");
+            }
+
+            // Lấy thông tin khóa học từ database
+            var course = await _context.Courses
+                .FirstOrDefaultAsync(c => c.Id == courseId && !c.Destroy);
+
+            if (course == null)
+            {
+                throw new NotFoundException("Course not found");
+            }
+
+            // Tính toán thông tin bổ sung
+            var totalLessons = await _context.Lessons
+                .CountAsync(l => l.CourseId == courseId && !l.Destroy);
+
+            var totalReviews = await _context.Reviews
+                .CountAsync(r => r.CourseId == courseId && !r.Destroy);
+
+            var averageRating = await _context.Reviews
+                .Where(r => r.CourseId == courseId && !r.Destroy)
+                .AverageAsync(r => (double?)r.Rating);
+
+            // Tính giá cuối cùng (sau discount)
+            var finalPrice = course.Price;
+            if (course.Discount.HasValue && course.Discount > 0)
+            {
+                finalPrice = course.Price - (course.Price * course.Discount.Value / 100);
+            }
+
+            var wishlist = new Wishlist
+            {
+                UserId = userId,
+                CourseId = courseId,
+                CourseName = course.Name,
+                CourseThumbnail = course.Thumbnail,
+                Instructor = course.Instructor,
+                Duration = course.Duration,
+                TotalPrice = finalPrice,
+                TotalLessons = totalLessons,
+                TotalReviews = totalReviews,
+                Rating = averageRating.HasValue ? (int)Math.Round(averageRating.Value) : null,
+                CreatedAt = DateTime.Now
+            };
+
+            _context.Wishlists.Add(wishlist);
+            await _context.SaveChangesAsync();
+
+            return new WishlistDto
+            {
+                Id = wishlist.Id,
+                UserId = wishlist.UserId,
+                CourseId = wishlist.CourseId,
+                CourseName = wishlist.CourseName,
+                CourseThumbnail = wishlist.CourseThumbnail,
+                Instructor = wishlist.Instructor,
+                Duration = wishlist.Duration,
+                TotalPrice = wishlist.TotalPrice,
+                TotalLessons = wishlist.TotalLessons,
+                TotalReviews = wishlist.TotalReviews,
+                Rating = wishlist.Rating,
+                CreatedAt = wishlist.CreatedAt,
+                UpdatedAt = wishlist.UpdatedAt
+            };
+        }
+
         public async Task<WishlistDto?> FindByUserAndCourseAsync(FindWishlistDto findWishlistDto)
         {
             var wishlist = await _context.Wishlists

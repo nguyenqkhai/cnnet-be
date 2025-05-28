@@ -84,6 +84,34 @@ namespace LmsBackend.Controllers
             }
         }
 
+        [HttpPost("add-course")]
+        public async Task<ActionResult<WishlistDto>> AddCourseToWishlist([FromBody] AddCourseToWishlistDto addCourseDto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId))
+                {
+                    return Unauthorized(new { message = "Token không hợp lệ" });
+                }
+
+                var wishlist = await _wishlistService.AddCourseToWishlistAsync(userId, addCourseDto.CourseId);
+                return Ok(wishlist);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi thêm khóa học vào danh sách yêu thích", details = ex.Message });
+            }
+        }
+
         [HttpGet("check/{courseId}")]
         public async Task<ActionResult<bool>> CheckInWishlist(long courseId)
         {

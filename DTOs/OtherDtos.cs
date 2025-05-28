@@ -250,6 +250,11 @@ namespace LmsBackend.DTOs
         public long CourseId { get; set; }
     }
 
+    public class AddCourseToWishlistDto
+    {
+        public long CourseId { get; set; }
+    }
+
     // Media DTOs
     public class UploadResponseDto
     {
