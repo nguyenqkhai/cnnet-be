@@ -6,6 +6,7 @@ namespace LmsBackend.Services
     {
         Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto);
         Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
+        Task<bool> LogoutAsync();
         Task<UserDto> GetCurrentUserAsync(long userId);
         Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto);
         string GenerateJwtToken(UserDto user);

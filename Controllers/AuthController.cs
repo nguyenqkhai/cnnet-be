@@ -53,6 +53,25 @@ namespace LmsBackend.Controllers
             }
         }
 
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<ActionResult> Logout()
+        {
+            try
+            {
+                var result = await _authService.LogoutAsync();
+                if (result)
+                {
+                    return Ok(new { message = "Đăng xuất thành công" });
+                }
+                return BadRequest(new { message = "Không thể đăng xuất" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Đã xảy ra lỗi trong quá trình đăng xuất", details = ex.Message });
+            }
+        }
+
         [HttpGet("current")]
         [Authorize]
         public async Task<ActionResult<UserDto>> GetCurrentUser()

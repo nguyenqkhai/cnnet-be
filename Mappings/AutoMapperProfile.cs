@@ -84,8 +84,8 @@ namespace LmsBackend.Mappings
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             // Ánh xạ Wishlist
-            CreateMap<Wishlist, CartDto>(); // Sử dụng lại CartDto cho Wishlist
-            CreateMap<CreateCartDto, Wishlist>(); // Sử dụng lại CreateCartDto cho Wishlist
+            CreateMap<Wishlist, WishlistDto>();
+            CreateMap<CreateWishlistDto, Wishlist>();
         }
     }
 }

@@ -93,6 +93,14 @@ namespace LmsBackend.Services
             };
         }
 
+        public async Task<bool> LogoutAsync()
+        {
+            // For JWT stateless authentication, logout is handled client-side
+            // This method returns success to indicate the logout request was processed
+            // The client should remove the token from storage
+            return await Task.FromResult(true);
+        }
+
         public async Task<UserDto> GetCurrentUserAsync(long userId)
         {
             var user = await _context.Users
