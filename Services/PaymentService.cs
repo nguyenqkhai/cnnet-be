@@ -24,11 +24,25 @@ namespace LmsBackend.Services
         {
             try
             {
-                var momoConfig = _configuration.GetSection("MoMo");
-                var partnerCode = momoConfig["PartnerCode"];
-                var accessKey = momoConfig["AccessKey"];
-                var secretKey = momoConfig["SecretKey"];
-                var endpoint = momoConfig["Endpoint"];
+                // Try environment variables first, then fallback to appsettings.json
+                var partnerCode = Environment.GetEnvironmentVariable("MoMo_PartnerCode") ?? _configuration["MoMo:PartnerCode"];
+                var accessKey = Environment.GetEnvironmentVariable("MoMo_AccessKey") ?? _configuration["MoMo:AccessKey"];
+                var secretKey = Environment.GetEnvironmentVariable("MoMo_SecretKey") ?? _configuration["MoMo:SecretKey"];
+                var endpoint = Environment.GetEnvironmentVariable("MoMo_Endpoint") ?? _configuration["MoMo:Endpoint"];
+
+                // Validate configuration
+                if (string.IsNullOrEmpty(partnerCode) || string.IsNullOrEmpty(accessKey) ||
+                    string.IsNullOrEmpty(secretKey) || string.IsNullOrEmpty(endpoint))
+                {
+                    Console.WriteLine($"❌ MoMo Configuration missing - PartnerCode: {partnerCode}, AccessKey: {accessKey}, SecretKey: {secretKey}, Endpoint: {endpoint}");
+                    return new PaymentResponseDto
+                    {
+                        Success = false,
+                        Message = "MoMo configuration is missing or incomplete",
+                        PaymentMethod = "momo",
+                        OrderId = request.OrderId
+                    };
+                }
 
                 Console.WriteLine($"🔍 MoMo Config - PartnerCode: {partnerCode}, AccessKey: {accessKey}, Endpoint: {endpoint}");
 
@@ -129,11 +143,11 @@ namespace LmsBackend.Services
         {
             try
             {
-                var zaloConfig = _configuration.GetSection("ZaloPay");
-                var appIdStr = zaloConfig["AppId"];
-                var key1 = zaloConfig["Key1"];
-                var key2 = zaloConfig["Key2"];
-                var endpoint = zaloConfig["Endpoint"];
+                // Try environment variables first, then fallback to appsettings.json
+                var appIdStr = Environment.GetEnvironmentVariable("ZaloPay_AppId") ?? _configuration["ZaloPay:AppId"];
+                var key1 = Environment.GetEnvironmentVariable("ZaloPay_Key1") ?? _configuration["ZaloPay:Key1"];
+                var key2 = Environment.GetEnvironmentVariable("ZaloPay_Key2") ?? _configuration["ZaloPay:Key2"];
+                var endpoint = Environment.GetEnvironmentVariable("ZaloPay_Endpoint") ?? _configuration["ZaloPay:Endpoint"];
 
                 // Validate configuration
                 if (string.IsNullOrEmpty(appIdStr) || string.IsNullOrEmpty(key1) ||
@@ -306,7 +320,7 @@ namespace LmsBackend.Services
         {
             try
             {
-                var secretKey = _configuration.GetSection("MoMo")["SecretKey"];
+                var secretKey = Environment.GetEnvironmentVariable("MoMo_SecretKey") ?? _configuration["MoMo:SecretKey"];
                 var signature = callbackData.GetValueOrDefault("signature", "");
 
                 // Recreate signature for verification
@@ -325,7 +339,7 @@ namespace LmsBackend.Services
         {
             try
             {
-                var key2 = _configuration.GetSection("ZaloPay")["Key2"];
+                var key2 = Environment.GetEnvironmentVariable("ZaloPay_Key2") ?? _configuration["ZaloPay:Key2"];
                 var mac = callbackData.GetValueOrDefault("mac", "");
 
                 var data = $"{callbackData.GetValueOrDefault("data")}";
