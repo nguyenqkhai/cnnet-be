@@ -73,7 +73,8 @@ builder.Services.AddCors(options =>
                 "https://localhost:5173",
                 "https://localhost:5174",
                 "https://localhost:5175",
-                "https://localhost:8080"
+                "https://localhost:8080",
+                "https://fla-dev-lms-net.vercel.app"  // Production frontend
               )
               .AllowAnyMethod()
               .AllowAnyHeader()
