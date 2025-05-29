@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace LmsBackend.DTOs
 {
     // Contact DTOs
@@ -293,7 +295,7 @@ namespace LmsBackend.DTOs
         public string OrderInfo { get; set; } = string.Empty;
         public string RedirectUrl { get; set; } = string.Empty;
         public string IpnUrl { get; set; } = string.Empty;
-        public string RequestType { get; set; } = "captureWallet";
+        public string RequestType { get; set; } = "payWithMethod";
         public string ExtraData { get; set; } = string.Empty;
         public string Lang { get; set; } = "vi";
         public string Signature { get; set; } = string.Empty;
@@ -333,14 +335,35 @@ namespace LmsBackend.DTOs
 
     public class ZaloPayResponseDto
     {
+        [JsonPropertyName("return_code")]
         public int ReturnCode { get; set; }
+
+        [JsonPropertyName("return_message")]
         public string ReturnMessage { get; set; } = string.Empty;
+
+        [JsonPropertyName("sub_return_code")]
         public int SubReturnCode { get; set; } // Changed from string to int
+
+        [JsonPropertyName("sub_return_message")]
         public string SubReturnMessage { get; set; } = string.Empty;
+
+        [JsonPropertyName("zp_trans_token")]
         public string ZpTransToken { get; set; } = string.Empty;
+
+        [JsonPropertyName("order_url")]
         public string OrderUrl { get; set; } = string.Empty;
+
+        [JsonPropertyName("order_token")]
         public string OrderToken { get; set; } = string.Empty;
+
+        [JsonPropertyName("app_trans_id")]
         public string AppTransId { get; set; } = string.Empty;
+    }
+
+    public class TestCompletePaymentDto
+    {
+        public string PaymentMethod { get; set; } = string.Empty;
+        public long Amount { get; set; }
     }
 
     public class PaymentCallbackDto

@@ -54,11 +54,25 @@ namespace LmsBackend.Controllers
 
                 if (result.Success)
                 {
-                    // Update order payment method
+                    // Update order payment method and status to COMPLETED
                     await _orderService.UpdateOrderAsync(request.OrderId, new UpdateOrderDto
                     {
-                        PaymentMethod = request.PaymentMethod
+                        PaymentMethod = request.PaymentMethod,
+                        Status = "COMPLETED"
                     });
+
+                    Console.WriteLine($"✅ Order {request.OrderId} marked as COMPLETED after successful payment");
+                }
+                else
+                {
+                    // Update order status to CANCELED if payment failed
+                    await _orderService.UpdateOrderAsync(request.OrderId, new UpdateOrderDto
+                    {
+                        PaymentMethod = request.PaymentMethod,
+                        Status = "CANCELED"
+                    });
+
+                    Console.WriteLine($"❌ Order {request.OrderId} marked as CANCELED after failed payment");
                 }
 
                 return Ok(result);
@@ -194,6 +208,40 @@ namespace LmsBackend.Controllers
             {
                 Console.WriteLine($"❌ ZaloPay Callback Error: {ex.Message}");
                 return Ok(new { return_code = 0, return_message = "Callback processing failed" });
+            }
+        }
+
+        [HttpPost("test/complete/{orderId}")]
+        public async Task<ActionResult> TestCompletePayment(long orderId, [FromBody] TestCompletePaymentDto request)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 Test Complete Payment - OrderId: {orderId}, PaymentMethod: {request.PaymentMethod}");
+
+                // Create callback data based on payment method
+                var callback = new PaymentCallbackDto
+                {
+                    OrderId = request.PaymentMethod == "momo" ? $"LMS_{orderId}_{DateTime.Now:yyyyMMddHHmmss}" : $"250529_{orderId}_{DateTime.Now.Ticks}",
+                    TransactionId = $"TEST_{DateTime.Now.Ticks}",
+                    Status = request.PaymentMethod == "momo" ? "0" : "1", // MoMo: 0=success, ZaloPay: 1=success
+                    Amount = request.Amount,
+                    PaymentMethod = request.PaymentMethod,
+                    Message = "Test payment completion",
+                    PaymentTime = DateTime.Now
+                };
+
+                var processed = await _paymentService.ProcessPaymentCallbackAsync(callback);
+
+                return Ok(new {
+                    success = processed,
+                    message = processed ? "Payment completed successfully" : "Failed to complete payment",
+                    orderId = orderId
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Test Complete Payment Error: {ex.Message}");
+                return StatusCode(500, new { message = "Failed to complete payment", details = ex.Message });
             }
         }
 

@@ -67,10 +67,12 @@ builder.Services.AddCors(options =>
                 "http://localhost:3000",    // React default port
                 "http://localhost:5173",    // Vite default port
                 "http://localhost:5174",    // Vite alternative port
+                "http://localhost:5175",    // Vite alternative port
                 "http://localhost:8080",    // Vue/other frameworks
                 "https://localhost:3000",   // HTTPS versions
                 "https://localhost:5173",
                 "https://localhost:5174",
+                "https://localhost:5175",
                 "https://localhost:8080"
               )
               .AllowAnyMethod()

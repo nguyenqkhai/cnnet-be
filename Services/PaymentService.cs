@@ -38,8 +38,10 @@ namespace LmsBackend.Services
                 var amount = request.Amount;
                 var extraData = "";
 
+                var requestType = "payWithMethod"; // Allow multiple payment methods including cards
+
                 // Create signature
-                var rawSignature = $"accessKey={accessKey}&amount={amount}&extraData={extraData}&ipnUrl={request.NotifyUrl}&orderId={orderId}&orderInfo={orderInfo}&partnerCode={partnerCode}&redirectUrl={request.ReturnUrl}&requestId={requestId}&requestType=captureWallet";
+                var rawSignature = $"accessKey={accessKey}&amount={amount}&extraData={extraData}&ipnUrl={request.NotifyUrl}&orderId={orderId}&orderInfo={orderInfo}&partnerCode={partnerCode}&redirectUrl={request.ReturnUrl}&requestId={requestId}&requestType={requestType}";
                 var signature = CreateMoMoSignature(rawSignature, secretKey);
 
                 var momoRequest = new MoMoPaymentRequestDto
@@ -51,6 +53,7 @@ namespace LmsBackend.Services
                     OrderInfo = orderInfo,
                     RedirectUrl = request.ReturnUrl,
                     IpnUrl = request.NotifyUrl,
+                    RequestType = requestType,
                     ExtraData = extraData,
                     Signature = signature
                 };
@@ -127,10 +130,36 @@ namespace LmsBackend.Services
             try
             {
                 var zaloConfig = _configuration.GetSection("ZaloPay");
-                var appId = int.Parse(zaloConfig["AppId"]);
+                var appIdStr = zaloConfig["AppId"];
                 var key1 = zaloConfig["Key1"];
                 var key2 = zaloConfig["Key2"];
                 var endpoint = zaloConfig["Endpoint"];
+
+                // Validate configuration
+                if (string.IsNullOrEmpty(appIdStr) || string.IsNullOrEmpty(key1) ||
+                    string.IsNullOrEmpty(key2) || string.IsNullOrEmpty(endpoint))
+                {
+                    Console.WriteLine($"❌ ZaloPay Configuration missing - AppId: {appIdStr}, Key1: {key1}, Key2: {key2}, Endpoint: {endpoint}");
+                    return new PaymentResponseDto
+                    {
+                        Success = false,
+                        Message = "ZaloPay configuration is missing or incomplete",
+                        PaymentMethod = "zalopay",
+                        OrderId = request.OrderId
+                    };
+                }
+
+                if (!int.TryParse(appIdStr, out int appId))
+                {
+                    Console.WriteLine($"❌ ZaloPay AppId is not a valid integer: {appIdStr}");
+                    return new PaymentResponseDto
+                    {
+                        Success = false,
+                        Message = "ZaloPay AppId configuration is invalid",
+                        PaymentMethod = "zalopay",
+                        OrderId = request.OrderId
+                    };
+                }
 
                 Console.WriteLine($"🔍 ZaloPay Config - AppId: {appId}, Key1: {key1}, Endpoint: {endpoint}");
 
@@ -198,9 +227,43 @@ namespace LmsBackend.Services
 
                 var options = new JsonSerializerOptions
                 {
-                    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    PropertyNameCaseInsensitive = true
                 };
-                var zaloResponse = JsonSerializer.Deserialize<ZaloPayResponseDto>(responseContent, options);
+
+                ZaloPayResponseDto? zaloResponse = null;
+                try
+                {
+                    zaloResponse = JsonSerializer.Deserialize<ZaloPayResponseDto>(responseContent, options);
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"❌ Failed to parse ZaloPay response: {ex.Message}");
+                    Console.WriteLine($"❌ Response content: {responseContent}");
+
+                    // Try parsing with camelCase as fallback
+                    try
+                    {
+                        var fallbackOptions = new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                            PropertyNameCaseInsensitive = true
+                        };
+                        zaloResponse = JsonSerializer.Deserialize<ZaloPayResponseDto>(responseContent, fallbackOptions);
+                        Console.WriteLine("✅ Successfully parsed with camelCase fallback");
+                    }
+                    catch (JsonException fallbackEx)
+                    {
+                        Console.WriteLine($"❌ Fallback parsing also failed: {fallbackEx.Message}");
+                        return new PaymentResponseDto
+                        {
+                            Success = false,
+                            Message = $"Failed to parse ZaloPay response: {ex.Message}",
+                            PaymentMethod = "zalopay",
+                            OrderId = request.OrderId
+                        };
+                    }
+                }
 
                 if (zaloResponse == null)
                 {
@@ -296,13 +359,13 @@ namespace LmsBackend.Services
                 }
 
                 // Update order status based on payment result
-                if (callback.Status == "success" || callback.Status == "0")
+                if (callback.Status == "success" || callback.Status == "0" || callback.Status == "1")
                 {
-                    order.Status = "completed";
+                    order.Status = "COMPLETED";
                 }
                 else
                 {
-                    order.Status = "failed";
+                    order.Status = "CANCELED";
                 }
 
                 order.UpdatedAt = DateTime.Now;
