@@ -55,7 +55,13 @@ namespace LmsBackend.Services
                     Signature = signature
                 };
 
-                var jsonRequest = JsonSerializer.Serialize(momoRequest);
+                // Use JsonSerializer with proper options
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = true
+                };
+                var jsonRequest = JsonSerializer.Serialize(momoRequest, options);
                 var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
                 Console.WriteLine($"🔍 MoMo Request: {jsonRequest}");
@@ -64,12 +70,37 @@ namespace LmsBackend.Services
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 Console.WriteLine($"🔍 MoMo Response: {responseContent}");
+                Console.WriteLine($"🔍 Response Status: {response.StatusCode}");
 
-                var momoResponse = JsonSerializer.Deserialize<MoMoPaymentResponseDto>(responseContent);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return new PaymentResponseDto
+                    {
+                        Success = false,
+                        Message = $"MoMo API error: {response.StatusCode} - {responseContent}",
+                        PaymentMethod = "momo",
+                        OrderId = request.OrderId
+                    };
+                }
+
+                var momoResponse = JsonSerializer.Deserialize<MoMoPaymentResponseDto>(responseContent, options);
+
+                if (momoResponse == null)
+                {
+                    return new PaymentResponseDto
+                    {
+                        Success = false,
+                        Message = "Failed to parse MoMo response",
+                        PaymentMethod = "momo",
+                        OrderId = request.OrderId
+                    };
+                }
+
+                Console.WriteLine($"🔍 Parsed MoMo Response - ResultCode: {momoResponse.ResultCode}, PayUrl: {momoResponse.PayUrl}");
 
                 return new PaymentResponseDto
                 {
-                    Success = momoResponse.ResultCode == "0",
+                    Success = momoResponse.ResultCode == 0, // Changed from "0" to 0
                     PaymentUrl = momoResponse.PayUrl,
                     TransactionId = momoResponse.RequestId,
                     Message = momoResponse.Message,
@@ -101,13 +132,19 @@ namespace LmsBackend.Services
                 var key2 = zaloConfig["Key2"];
                 var endpoint = zaloConfig["Endpoint"];
 
+                Console.WriteLine($"🔍 ZaloPay Config - AppId: {appId}, Key1: {key1}, Endpoint: {endpoint}");
+
                 var appTransId = $"{DateTime.Now:yyMMdd}_{request.OrderId}_{DateTime.Now.Ticks}";
                 var appTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                var embedData = JsonSerializer.Serialize(new { orderId = request.OrderId });
-                var item = JsonSerializer.Serialize(new[] { new { name = request.Description, quantity = 1, price = request.Amount } });
+                var embedData = "{}"; // Empty JSON object
+                var item = "[]"; // Empty JSON array
 
-                var data = $"{appId}|{appTransId}|{request.Amount}|{request.Description}|{appTime}|{embedData}|{item}";
+                // ZaloPay MAC format: app_id|app_trans_id|app_user|amount|app_time|embed_data|item
+                var data = $"{appId}|{appTransId}|user123|{request.Amount}|{appTime}|{embedData}|{item}";
                 var mac = CreateZaloPaySignature(data, key1);
+
+                Console.WriteLine($"🔍 ZaloPay Data String: {data}");
+                Console.WriteLine($"🔍 ZaloPay MAC: {mac}");
 
                 var zaloRequest = new ZaloPayRequestDto
                 {
@@ -139,10 +176,44 @@ namespace LmsBackend.Services
                     new("callback_url", zaloRequest.CallbackUrl)
                 };
 
+                Console.WriteLine($"🔍 ZaloPay Form Data: {string.Join(", ", formData.Select(x => $"{x.Key}={x.Value}"))}");
+
                 var content = new FormUrlEncodedContent(formData);
                 var response = await _httpClient.PostAsync(endpoint, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var zaloResponse = JsonSerializer.Deserialize<ZaloPayResponseDto>(responseContent);
+
+                Console.WriteLine($"🔍 ZaloPay Response: {responseContent}");
+                Console.WriteLine($"🔍 ZaloPay Response Status: {response.StatusCode}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return new PaymentResponseDto
+                    {
+                        Success = false,
+                        Message = $"ZaloPay API error: {response.StatusCode} - {responseContent}",
+                        PaymentMethod = "zalopay",
+                        OrderId = request.OrderId
+                    };
+                }
+
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+                };
+                var zaloResponse = JsonSerializer.Deserialize<ZaloPayResponseDto>(responseContent, options);
+
+                if (zaloResponse == null)
+                {
+                    return new PaymentResponseDto
+                    {
+                        Success = false,
+                        Message = "Failed to parse ZaloPay response",
+                        PaymentMethod = "zalopay",
+                        OrderId = request.OrderId
+                    };
+                }
+
+                Console.WriteLine($"🔍 Parsed ZaloPay Response - ReturnCode: {zaloResponse.ReturnCode}, OrderUrl: {zaloResponse.OrderUrl}");
 
                 return new PaymentResponseDto
                 {
@@ -156,6 +227,8 @@ namespace LmsBackend.Services
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ ZaloPay Payment Error: {ex.Message}");
+                Console.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
                 return new PaymentResponseDto
                 {
                     Success = false,

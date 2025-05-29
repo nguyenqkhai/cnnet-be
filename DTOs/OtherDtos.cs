@@ -307,10 +307,13 @@ namespace LmsBackend.DTOs
         public long Amount { get; set; }
         public long ResponseTime { get; set; }
         public string Message { get; set; } = string.Empty;
-        public string ResultCode { get; set; } = string.Empty;
+        public int ResultCode { get; set; } // Changed from string to int
         public string PayUrl { get; set; } = string.Empty;
         public string DeepLink { get; set; } = string.Empty;
         public string QrCodeUrl { get; set; } = string.Empty;
+        public string AppLink { get; set; } = string.Empty;
+        public string DeeplinkMiniApp { get; set; } = string.Empty;
+        public string Signature { get; set; } = string.Empty;
     }
 
     public class ZaloPayRequestDto
@@ -332,7 +335,7 @@ namespace LmsBackend.DTOs
     {
         public int ReturnCode { get; set; }
         public string ReturnMessage { get; set; } = string.Empty;
-        public string SubReturnCode { get; set; } = string.Empty;
+        public int SubReturnCode { get; set; } // Changed from string to int
         public string SubReturnMessage { get; set; } = string.Empty;
         public string ZpTransToken { get; set; } = string.Empty;
         public string OrderUrl { get; set; } = string.Empty;
