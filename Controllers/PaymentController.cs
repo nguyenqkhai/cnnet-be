@@ -211,39 +211,7 @@ namespace LmsBackend.Controllers
             }
         }
 
-        [HttpPost("test/complete/{orderId}")]
-        public async Task<ActionResult> TestCompletePayment(long orderId, [FromBody] TestCompletePaymentDto request)
-        {
-            try
-            {
-                Console.WriteLine($"🔍 Test Complete Payment - OrderId: {orderId}, PaymentMethod: {request.PaymentMethod}");
 
-                // Create callback data based on payment method
-                var callback = new PaymentCallbackDto
-                {
-                    OrderId = request.PaymentMethod == "momo" ? $"LMS_{orderId}_{DateTime.Now:yyyyMMddHHmmss}" : $"250529_{orderId}_{DateTime.Now.Ticks}",
-                    TransactionId = $"TEST_{DateTime.Now.Ticks}",
-                    Status = request.PaymentMethod == "momo" ? "0" : "1", // MoMo: 0=success, ZaloPay: 1=success
-                    Amount = request.Amount,
-                    PaymentMethod = request.PaymentMethod,
-                    Message = "Test payment completion",
-                    PaymentTime = DateTime.Now
-                };
-
-                var processed = await _paymentService.ProcessPaymentCallbackAsync(callback);
-
-                return Ok(new {
-                    success = processed,
-                    message = processed ? "Payment completed successfully" : "Failed to complete payment",
-                    orderId = orderId
-                });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Test Complete Payment Error: {ex.Message}");
-                return StatusCode(500, new { message = "Failed to complete payment", details = ex.Message });
-            }
-        }
 
         [HttpGet("status/{orderId}")]
         [Authorize]
@@ -283,5 +251,89 @@ namespace LmsBackend.Controllers
                 return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy trạng thái thanh toán", details = ex.Message });
             }
         }
+
+        // Test endpoint to manually complete a single order (for testing payment flow)
+        [HttpPost("test/complete/{orderId}")]
+        public async Task<ActionResult> TestCompleteOrder(long orderId, [FromBody] TestCompleteOrderRequest request)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 Test completing order {orderId}");
+
+                var order = await _orderService.GetOrderByIdAsync(orderId);
+
+                if (order == null)
+                {
+                    return NotFound(new { message = "Order not found" });
+                }
+
+                // Update order status to completed
+                var updateDto = new UpdateOrderDto
+                {
+                    Status = "COMPLETED"
+                };
+
+                var updatedOrder = await _orderService.UpdateOrderAsync(orderId, updateDto);
+
+                Console.WriteLine($"✅ Order {orderId} manually completed for testing");
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Order completed successfully",
+                    order = updatedOrder
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Test complete order error: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi hoàn thành đơn hàng", details = ex.Message });
+            }
+        }
+
+        // Test endpoint to complete all pending orders for a user
+        [HttpPost("test/complete-user-orders/{userId}")]
+        public async Task<ActionResult> TestCompleteUserOrders(long userId)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 Completing all pending orders for user {userId}");
+
+                var orders = await _orderService.GetOrdersByUserIdAsync(userId);
+                var pendingOrders = orders.Where(o => o.Status.ToUpper() == "PENDING").ToList();
+
+                Console.WriteLine($"🔍 Found {pendingOrders.Count} pending orders");
+
+                foreach (var order in pendingOrders)
+                {
+                    var updateDto = new UpdateOrderDto
+                    {
+                        Status = "COMPLETED"
+                    };
+
+                    await _orderService.UpdateOrderAsync(order.Id, updateDto);
+                    Console.WriteLine($"✅ Order {order.Id} completed");
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Completed {pendingOrders.Count} orders",
+                    completedOrders = pendingOrders.Count
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Test complete user orders error: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi hoàn thành đơn hàng", details = ex.Message });
+            }
+        }
+    }
+
+    // DTO for test complete order request
+    public class TestCompleteOrderRequest
+    {
+        public string PaymentMethod { get; set; } = "";
+        public long Amount { get; set; }
     }
 }
