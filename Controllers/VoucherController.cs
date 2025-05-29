@@ -17,7 +17,6 @@ namespace LmsBackend.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "admin")]
         public async Task<ActionResult<List<VoucherDto>>> GetAllVouchers()
         {
             try
