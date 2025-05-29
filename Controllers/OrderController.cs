@@ -152,5 +152,46 @@ namespace LmsBackend.Controllers
                 return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa đơn hàng", details = ex.Message });
             }
         }
+
+        // TEST ENDPOINT - Tạo order completed cho testing
+        [HttpPost("test/create-completed")]
+        public async Task<ActionResult<OrderDto>> CreateCompletedOrderForTest([FromBody] CreateOrderDto createOrderDto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId))
+                {
+                    return Unauthorized(new { message = "Token không hợp lệ" });
+                }
+
+                createOrderDto.UserId = userId;
+
+                // Tạo order và set status thành COMPLETED ngay lập tức
+                var order = await _orderService.CreateOrderAsync(createOrderDto);
+
+                // Cập nhật status thành COMPLETED
+                await _orderService.UpdateOrderAsync(order.Id, new UpdateOrderDto { Status = "COMPLETED" });
+
+                // Lấy order đã cập nhật
+                var completedOrder = await _orderService.GetOrderByIdAsync(order.Id);
+
+                Console.WriteLine($"✅ Created completed order for testing: User {userId}, Course {createOrderDto.CourseId}");
+
+                return Ok(completedOrder);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo đơn hàng test", details = ex.Message });
+            }
+        }
     }
 }

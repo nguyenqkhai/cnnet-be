@@ -57,9 +57,13 @@ namespace LmsBackend.Services
 
         public async Task<ProgressDto> InitializeProgressAsync(InitProgressDto initProgressDto)
         {
+            Console.WriteLine($"🔍 InitializeProgressAsync - UserId: {initProgressDto.UserId}, CourseId: {initProgressDto.CourseId}, TotalLessons: {initProgressDto.TotalLessons}");
+
             // Xác minh người dùng và khóa học tồn tại
             var userExists = await _context.Users.AnyAsync(u => u.Id == initProgressDto.UserId && !u.Destroy);
             var courseExists = await _context.Courses.AnyAsync(c => c.Id == initProgressDto.CourseId && !c.Destroy);
+
+            Console.WriteLine($"🔍 User exists: {userExists}, Course exists: {courseExists}");
 
             if (!userExists)
                 throw new NotFoundException("User not found");
@@ -84,15 +88,24 @@ namespace LmsBackend.Services
                 };
             }
 
-            // Xác minh người dùng đã mua khóa học
-            var hasPurchased = await _context.Orders
-                .AnyAsync(o => o.UserId == initProgressDto.UserId &&
-                              o.CourseId == initProgressDto.CourseId &&
-                              o.Status == "completed" &&
-                              !o.Destroy);
+            // Xác minh người dùng đã mua khóa học - kiểm tra tất cả order trước
+            var allOrders = await _context.Orders
+                .Where(o => o.UserId == initProgressDto.UserId &&
+                           o.CourseId == initProgressDto.CourseId &&
+                           !o.Destroy)
+                .ToListAsync();
+
+            Console.WriteLine($"🔍 Found {allOrders.Count} orders for user {initProgressDto.UserId}, course {initProgressDto.CourseId}");
+            foreach (var order in allOrders)
+            {
+                Console.WriteLine($"🔍 Order {order.Id}: Status = '{order.Status}', PaymentMethod = '{order.PaymentMethod}'");
+            }
+
+            var hasPurchased = allOrders.Any(o => o.Status.ToLower() == "completed");
 
             if (!hasPurchased)
             {
+                Console.WriteLine($"❌ User {initProgressDto.UserId} has not purchased course {initProgressDto.CourseId} or order not completed");
                 throw new InvalidOperationException("User must purchase the course before tracking progress");
             }
 
@@ -123,17 +136,24 @@ namespace LmsBackend.Services
 
         public async Task<ProgressDto> UpdateLessonProgressAsync(long userId, long courseId, UpdateProgressDto updateProgressDto)
         {
+            Console.WriteLine($"🔍 UpdateLessonProgressAsync - UserId: {userId}, CourseId: {courseId}, LessonId: {updateProgressDto.LessonId}, IsCompleted: {updateProgressDto.IsCompleted}");
+
             var progress = await _context.Progresses
                 .FirstOrDefaultAsync(p => p.UserId == userId && p.CourseId == courseId);
 
             if (progress == null)
             {
+                Console.WriteLine($"❌ Progress not found for UserId: {userId}, CourseId: {courseId}");
                 throw new NotFoundException("Progress not found. Please initialize progress first.");
             }
 
             // Xác minh bài học tồn tại và thuộc về khóa học
             var lessonExists = await _context.Lessons
-                .AnyAsync(l => l.Id == updateProgressDto.LessonId && l.CourseId == courseId && !l.Destroy);
+                .AnyAsync(l => l.Id == updateProgressDto.LessonId &&
+                              l.CourseId == courseId &&
+                              !l.Destroy);
+
+            Console.WriteLine($"🔍 Lesson exists: {lessonExists}");
 
             if (!lessonExists)
             {

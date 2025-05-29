@@ -53,16 +53,35 @@ namespace LmsBackend.Services
             if (!courseExists)
                 throw new NotFoundException("Course not found");
 
-            // Kiểm tra xem người dùng đã có khóa học này chưa
-            var existingOrder = await _context.Orders
+            // Kiểm tra xem người dùng đã có khóa học này chưa (completed) hoặc đang có order pending
+            var existingCompletedOrder = await _context.Orders
                 .FirstOrDefaultAsync(o => o.UserId == createOrderDto.UserId &&
                                          o.CourseId == createOrderDto.CourseId &&
-                                         o.Status == "completed" &&
+                                         o.Status.ToLower() == "completed" &&
                                          !o.Destroy);
 
-            if (existingOrder != null)
+            if (existingCompletedOrder != null)
             {
                 throw new InvalidOperationException("User already owns this course");
+            }
+
+            // Kiểm tra xem có order pending nào không, nếu có thì xóa order cũ để tạo order mới
+            var existingPendingOrders = await _context.Orders
+                .Where(o => o.UserId == createOrderDto.UserId &&
+                           o.CourseId == createOrderDto.CourseId &&
+                           (o.Status.ToLower() == "pending" || o.Status.ToLower() == "canceled") &&
+                           !o.Destroy)
+                .ToListAsync();
+
+            if (existingPendingOrders.Any())
+            {
+                // Xóa tất cả order pending/canceled cũ để cho phép tạo order mới với payment method khác
+                foreach (var pendingOrder in existingPendingOrders)
+                {
+                    pendingOrder.Destroy = true;
+                    pendingOrder.UpdatedAt = DateTime.Now;
+                }
+                Console.WriteLine($"🔍 Removed {existingPendingOrders.Count} existing pending/canceled orders for user {createOrderDto.UserId}, course {createOrderDto.CourseId}");
             }
 
             var order = new Order

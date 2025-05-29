@@ -357,29 +357,59 @@ namespace LmsBackend.Services
         {
             try
             {
-                // Extract order ID from callback
-                var orderIdStr = callback.OrderId.Replace("LMS_", "").Split('_')[0];
-                if (!long.TryParse(orderIdStr, out long orderId))
+                Console.WriteLine($"🔍 Processing callback - OrderId: {callback.OrderId}, PaymentMethod: {callback.PaymentMethod}");
+
+                // Extract order ID from callback based on payment method
+                long orderId;
+                if (callback.PaymentMethod == "momo")
                 {
+                    // MoMo format: LMS_{orderId}_{timestamp}
+                    var orderIdStr = callback.OrderId.Replace("LMS_", "").Split('_')[0];
+                    if (!long.TryParse(orderIdStr, out orderId))
+                    {
+                        Console.WriteLine($"❌ Failed to parse MoMo order ID: {callback.OrderId}");
+                        return false;
+                    }
+                }
+                else if (callback.PaymentMethod == "zalopay")
+                {
+                    // ZaloPay format: {yyMMdd}_{orderId}_{timestamp}
+                    var parts = callback.OrderId.Split('_');
+                    if (parts.Length < 2 || !long.TryParse(parts[1], out orderId))
+                    {
+                        Console.WriteLine($"❌ Failed to parse ZaloPay order ID: {callback.OrderId}");
+                        return false;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Unknown payment method: {callback.PaymentMethod}");
                     return false;
                 }
+
+                Console.WriteLine($"🔍 Extracted order ID: {orderId}");
 
                 var order = await _context.Orders
                     .FirstOrDefaultAsync(o => o.Id == orderId && !o.Destroy);
 
                 if (order == null)
                 {
+                    Console.WriteLine($"❌ Order not found: {orderId}");
                     return false;
                 }
+
+                Console.WriteLine($"🔍 Found order: {order.Id}, Current status: {order.Status}");
 
                 // Update order status based on payment result
                 if (callback.Status == "success" || callback.Status == "0" || callback.Status == "1")
                 {
                     order.Status = "COMPLETED";
+                    Console.WriteLine($"✅ Order {orderId} marked as COMPLETED");
                 }
                 else
                 {
                     order.Status = "CANCELED";
+                    Console.WriteLine($"❌ Order {orderId} marked as CANCELED");
                 }
 
                 order.UpdatedAt = DateTime.Now;
@@ -387,8 +417,9 @@ namespace LmsBackend.Services
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"❌ ProcessPaymentCallbackAsync Error: {ex.Message}");
                 return false;
             }
         }

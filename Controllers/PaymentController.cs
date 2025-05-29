@@ -54,25 +54,25 @@ namespace LmsBackend.Controllers
 
                 if (result.Success)
                 {
-                    // Update order payment method and status to COMPLETED
+                    // Only update payment method and set status to PENDING (waiting for payment)
                     await _orderService.UpdateOrderAsync(request.OrderId, new UpdateOrderDto
                     {
                         PaymentMethod = request.PaymentMethod,
-                        Status = "COMPLETED"
+                        Status = "PENDING"
                     });
 
-                    Console.WriteLine($"✅ Order {request.OrderId} marked as COMPLETED after successful payment");
+                    Console.WriteLine($"🔍 Order {request.OrderId} marked as PENDING, waiting for payment callback");
                 }
                 else
                 {
-                    // Update order status to CANCELED if payment failed
+                    // Update order status to CANCELED if payment URL creation failed
                     await _orderService.UpdateOrderAsync(request.OrderId, new UpdateOrderDto
                     {
                         PaymentMethod = request.PaymentMethod,
                         Status = "CANCELED"
                     });
 
-                    Console.WriteLine($"❌ Order {request.OrderId} marked as CANCELED after failed payment");
+                    Console.WriteLine($"❌ Order {request.OrderId} marked as CANCELED after failed payment URL creation");
                 }
 
                 return Ok(result);
