@@ -75,48 +75,218 @@ namespace LmsBackend.Services
 
         public async Task<CourseDto> CreateCourseAsync(CreateCourseDto createCourseDto)
         {
-            var course = _mapper.Map<Course>(createCourseDto);
-            course.CreatedAt = DateTime.Now;
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var course = _mapper.Map<Course>(createCourseDto);
+                course.CreatedAt = DateTime.Now;
 
-            _context.Courses.Add(course);
-            await _context.SaveChangesAsync();
+                _context.Courses.Add(course);
+                await _context.SaveChangesAsync();
 
-            return _mapper.Map<CourseDto>(course);
+                // Tạo các Module và Lesson từ CourseModules
+                if (createCourseDto.CourseModules != null && createCourseDto.CourseModules.Any())
+                {
+                    foreach (var moduleData in createCourseDto.CourseModules)
+                    {
+                        // Tạo Module
+                        var module = new Module
+                        {
+                            Title = moduleData.Title,
+                            Description = moduleData.Description,
+                            Duration = !string.IsNullOrEmpty(moduleData.Duration) && double.TryParse(moduleData.Duration, out var duration) ? duration : null,
+                            CourseId = course.Id,
+                            CreatedAt = DateTime.Now,
+                            Lessons = new List<long>()
+                        };
+
+                        _context.Modules.Add(module);
+                        await _context.SaveChangesAsync();
+
+                        // Tạo các Lesson cho Module này
+                        var lessonIds = new List<long>();
+                        if (moduleData.Lessons != null && moduleData.Lessons.Any())
+                        {
+                            foreach (var lessonData in moduleData.Lessons)
+                            {
+                                var lesson = new Lesson
+                                {
+                                    Name = lessonData.Name,
+                                    VideoUrl = lessonData.VideoUrl,
+                                    CourseId = course.Id,
+                                    CoursePart = moduleData.Title, // Sử dụng title của module làm coursePart
+                                    CreatedAt = DateTime.Now
+                                };
+
+                                _context.Lessons.Add(lesson);
+                                await _context.SaveChangesAsync();
+
+                                lessonIds.Add(lesson.Id);
+                            }
+                        }
+
+                        // Cập nhật danh sách lesson IDs cho module
+                        module.Lessons = lessonIds;
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                await transaction.CommitAsync();
+                return _mapper.Map<CourseDto>(course);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<CourseDto> UpdateCourseAsync(long id, UpdateCourseDto updateCourseDto)
         {
-            var course = await _context.Courses
-                .FirstOrDefaultAsync(c => c.Id == id && !c.Destroy);
-
-            if (course == null)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                throw new NotFoundException("Course not found");
+                var course = await _context.Courses
+                    .FirstOrDefaultAsync(c => c.Id == id && !c.Destroy);
+
+                if (course == null)
+                {
+                    throw new NotFoundException("Course not found");
+                }
+
+                _mapper.Map(updateCourseDto, course);
+                course.UpdatedAt = DateTime.Now;
+
+                // Nếu có cập nhật CourseModules, cần cập nhật lại Module và Lesson
+                if (updateCourseDto.CourseModules != null)
+                {
+                    // Xóa các Module và Lesson cũ (soft delete)
+                    var existingModules = await _context.Modules
+                        .Where(m => m.CourseId == id && !m.Destroy)
+                        .ToListAsync();
+
+                    var existingLessons = await _context.Lessons
+                        .Where(l => l.CourseId == id && !l.Destroy)
+                        .ToListAsync();
+
+                    foreach (var module in existingModules)
+                    {
+                        module.Destroy = true;
+                        module.UpdatedAt = DateTime.Now;
+                    }
+
+                    foreach (var lesson in existingLessons)
+                    {
+                        lesson.Destroy = true;
+                        lesson.UpdatedAt = DateTime.Now;
+                    }
+
+                    // Tạo lại các Module và Lesson mới
+                    if (updateCourseDto.CourseModules.Any())
+                    {
+                        foreach (var moduleData in updateCourseDto.CourseModules)
+                        {
+                            // Tạo Module mới
+                            var module = new Module
+                            {
+                                Title = moduleData.Title,
+                                Description = moduleData.Description,
+                                Duration = !string.IsNullOrEmpty(moduleData.Duration) && double.TryParse(moduleData.Duration, out var duration) ? duration : null,
+                                CourseId = course.Id,
+                                CreatedAt = DateTime.Now,
+                                Lessons = new List<long>()
+                            };
+
+                            _context.Modules.Add(module);
+                            await _context.SaveChangesAsync();
+
+                            // Tạo các Lesson cho Module này
+                            var lessonIds = new List<long>();
+                            if (moduleData.Lessons != null && moduleData.Lessons.Any())
+                            {
+                                foreach (var lessonData in moduleData.Lessons)
+                                {
+                                    var lesson = new Lesson
+                                    {
+                                        Name = lessonData.Name,
+                                        VideoUrl = lessonData.VideoUrl,
+                                        CourseId = course.Id,
+                                        CoursePart = moduleData.Title,
+                                        CreatedAt = DateTime.Now
+                                    };
+
+                                    _context.Lessons.Add(lesson);
+                                    await _context.SaveChangesAsync();
+
+                                    lessonIds.Add(lesson.Id);
+                                }
+                            }
+
+                            // Cập nhật danh sách lesson IDs cho module
+                            module.Lessons = lessonIds;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return _mapper.Map<CourseDto>(course);
             }
-
-            _mapper.Map(updateCourseDto, course);
-            course.UpdatedAt = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-
-            return _mapper.Map<CourseDto>(course);
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<bool> DeleteCourseAsync(long id)
         {
-            var course = await _context.Courses
-                .FirstOrDefaultAsync(c => c.Id == id && !c.Destroy);
-
-            if (course == null)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                return false;
+                var course = await _context.Courses
+                    .FirstOrDefaultAsync(c => c.Id == id && !c.Destroy);
+
+                if (course == null)
+                {
+                    return false;
+                }
+
+                // Xóa các Module và Lesson liên quan (soft delete)
+                var relatedModules = await _context.Modules
+                    .Where(m => m.CourseId == id && !m.Destroy)
+                    .ToListAsync();
+
+                var relatedLessons = await _context.Lessons
+                    .Where(l => l.CourseId == id && !l.Destroy)
+                    .ToListAsync();
+
+                foreach (var module in relatedModules)
+                {
+                    module.Destroy = true;
+                    module.UpdatedAt = DateTime.Now;
+                }
+
+                foreach (var lesson in relatedLessons)
+                {
+                    lesson.Destroy = true;
+                    lesson.UpdatedAt = DateTime.Now;
+                }
+
+                // Xóa Course
+                course.Destroy = true;
+                course.UpdatedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
             }
-
-            course.Destroy = true;
-            course.UpdatedAt = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-            return true;
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 }

@@ -30,6 +30,8 @@ namespace LmsBackend.Services
                 var secretKey = momoConfig["SecretKey"];
                 var endpoint = momoConfig["Endpoint"];
 
+                Console.WriteLine($"🔍 MoMo Config - PartnerCode: {partnerCode}, AccessKey: {accessKey}, Endpoint: {endpoint}");
+
                 var requestId = Guid.NewGuid().ToString();
                 var orderId = $"LMS_{request.OrderId}_{DateTime.Now:yyyyMMddHHmmss}";
                 var orderInfo = request.Description;
@@ -56,8 +58,13 @@ namespace LmsBackend.Services
                 var jsonRequest = JsonSerializer.Serialize(momoRequest);
                 var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
+                Console.WriteLine($"🔍 MoMo Request: {jsonRequest}");
+
                 var response = await _httpClient.PostAsync(endpoint, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"🔍 MoMo Response: {responseContent}");
+
                 var momoResponse = JsonSerializer.Deserialize<MoMoPaymentResponseDto>(responseContent);
 
                 return new PaymentResponseDto
@@ -72,6 +79,8 @@ namespace LmsBackend.Services
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ MoMo Payment Error: {ex.Message}");
+                Console.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
                 return new PaymentResponseDto
                 {
                     Success = false,
@@ -163,10 +172,10 @@ namespace LmsBackend.Services
             {
                 var secretKey = _configuration.GetSection("MoMo")["SecretKey"];
                 var signature = callbackData.GetValueOrDefault("signature", "");
-                
+
                 // Recreate signature for verification
                 var rawSignature = $"accessKey={callbackData.GetValueOrDefault("accessKey")}&amount={callbackData.GetValueOrDefault("amount")}&extraData={callbackData.GetValueOrDefault("extraData")}&message={callbackData.GetValueOrDefault("message")}&orderId={callbackData.GetValueOrDefault("orderId")}&orderInfo={callbackData.GetValueOrDefault("orderInfo")}&orderType={callbackData.GetValueOrDefault("orderType")}&partnerCode={callbackData.GetValueOrDefault("partnerCode")}&payType={callbackData.GetValueOrDefault("payType")}&requestId={callbackData.GetValueOrDefault("requestId")}&responseTime={callbackData.GetValueOrDefault("responseTime")}&resultCode={callbackData.GetValueOrDefault("resultCode")}&transId={callbackData.GetValueOrDefault("transId")}";
-                
+
                 var expectedSignature = CreateMoMoSignature(rawSignature, secretKey);
                 return signature == expectedSignature;
             }
@@ -182,10 +191,10 @@ namespace LmsBackend.Services
             {
                 var key2 = _configuration.GetSection("ZaloPay")["Key2"];
                 var mac = callbackData.GetValueOrDefault("mac", "");
-                
+
                 var data = $"{callbackData.GetValueOrDefault("data")}";
                 var expectedMac = CreateZaloPaySignature(data, key2);
-                
+
                 return mac == expectedMac;
             }
             catch

@@ -36,6 +36,23 @@ namespace LmsBackend.Controllers
         {
             try
             {
+                // Debug: Log dữ liệu nhận được
+                Console.WriteLine($"Received CourseModules count: {createCourseDto.CourseModules?.Count}");
+                if (createCourseDto.CourseModules != null)
+                {
+                    foreach (var module in createCourseDto.CourseModules)
+                    {
+                        Console.WriteLine($"Module: {module.Title}, Lessons count: {module.Lessons?.Count}");
+                        if (module.Lessons != null)
+                        {
+                            foreach (var lesson in module.Lessons)
+                            {
+                                Console.WriteLine($"  Lesson: {lesson.Name}, VideoUrl: {lesson.VideoUrl}");
+                            }
+                        }
+                    }
+                }
+
                 var course = await _courseService.CreateCourseAsync(createCourseDto);
                 return Ok(course);
             }
