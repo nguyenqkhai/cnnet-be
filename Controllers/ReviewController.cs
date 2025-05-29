@@ -18,7 +18,6 @@ namespace LmsBackend.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "admin")]
         public async Task<ActionResult<List<ReviewDto>>> GetAllReviews()
         {
             try
@@ -44,7 +43,7 @@ namespace LmsBackend.Controllers
                     return Unauthorized(new { message = "Token không hợp lệ" });
                 }
 
-                createReviewDto.UserId = userId; 
+                createReviewDto.UserId = userId;
 
                 var review = await _reviewService.CreateReviewAsync(createReviewDto);
                 return Ok(review);
