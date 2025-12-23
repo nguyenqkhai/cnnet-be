@@ -54,6 +54,7 @@ Swagger được bật mặc định ở mọi môi trường để dễ kiểm 
 
 ## 📂 Cấu trúc thư mục
 
+```
 ├── Controllers/ // API Controllers (Auth, Course, Payment, Order, Voucher…)
 ├── Services/ // Business logic + Interfaces (Dependency Injection)
 ├── Models/ // Entity (EF Core)
@@ -63,6 +64,7 @@ Swagger được bật mặc định ở mọi môi trường để dễ kiểm 
 ├── Mappings/ // AutoMapper profiles
 ├── Properties/ // Launch settings
 ├── deploy.md // Hướng dẫn deploy Azure
+```
 
 ## ⚙️ Yêu cầu môi trường
 
