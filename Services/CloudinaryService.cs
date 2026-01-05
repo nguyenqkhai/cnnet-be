@@ -1,8 +1,8 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using LmsBackend.DTOs;
+using ElearningBackend.DTOs;
 
-namespace LmsBackend.Services
+namespace ElearningBackend.Services
 {
     public class CloudinaryService : ICloudinaryService
     {

@@ -1,4 +1,4 @@
-namespace LmsBackend.DTOs
+namespace ElearningBackend.DTOs
 {
     public class CartDto
     {

@@ -1,4 +1,4 @@
-namespace LmsBackend.Models
+namespace ElearningBackend.Models
 {
     public class CourseModuleData
     {

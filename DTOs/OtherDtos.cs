@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace LmsBackend.DTOs
+namespace ElearningBackend.DTOs
 {
     // Contact DTOs
     public class ContactDto

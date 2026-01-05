@@ -1,4 +1,4 @@
-## 🎓 CNNET / LMS Backend (ASP.NET Core 8)
+## 🎓 E-LEARNING-BACKEND / LMS Backend (ASP.NET Core 8)
 
 Backend cho hệ thống quản lý khóa học trực tuyến (Learning Management System – LMS), cung cấp API phục vụ các chức năng: quản lý người dùng & khóa học, giỏ hàng/đơn hàng, thanh toán online, blog, đánh giá, wishlist, voucher và upload media.
 

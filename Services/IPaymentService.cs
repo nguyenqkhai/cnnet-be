@@ -1,6 +1,6 @@
-using LmsBackend.DTOs;
+using ElearningBackend.DTOs;
 
-namespace LmsBackend.Services
+namespace ElearningBackend.Services
 {
     public interface IPaymentService
     {

@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using LmsBackend.Data;
-using LmsBackend.Services;
-using LmsBackend.Mappings;
+using ElearningBackend.Data;
+using ElearningBackend.Services;
+using ElearningBackend.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 

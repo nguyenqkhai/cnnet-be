@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using LmsBackend.Models;
+using ElearningBackend.Models;
 
-namespace LmsBackend.Data
+namespace ElearningBackend.Data
 {
     public class LmsDbContext : DbContext
     {

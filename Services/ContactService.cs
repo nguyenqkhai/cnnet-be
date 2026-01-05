@@ -1,10 +1,10 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using LmsBackend.Data;
-using LmsBackend.DTOs;
-using LmsBackend.Models;
+using ElearningBackend.Data;
+using ElearningBackend.DTOs;
+using ElearningBackend.Models;
 
-namespace LmsBackend.Services
+namespace ElearningBackend.Services
 {
     public class ContactService : IContactService
     {

@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using LmsBackend.DTOs;
-using LmsBackend.Services;
+using ElearningBackend.DTOs;
+using ElearningBackend.Services;
 
-namespace LmsBackend.Controllers
+namespace ElearningBackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

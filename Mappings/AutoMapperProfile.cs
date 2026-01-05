@@ -1,8 +1,8 @@
 using AutoMapper;
-using LmsBackend.DTOs;
-using LmsBackend.Models;
+using ElearningBackend.DTOs;
+using ElearningBackend.Models;
 
-namespace LmsBackend.Mappings
+namespace ElearningBackend.Mappings
 {
     public class AutoMapperProfile : Profile
     {

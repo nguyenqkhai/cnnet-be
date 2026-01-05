@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Newtonsoft.Json;
 
-namespace LmsBackend.Models
+namespace ElearningBackend.Models
 {
     [Table("Progress")]
     public class Progress

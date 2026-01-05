@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
-using LmsBackend.Data;
-using LmsBackend.DTOs;
-using LmsBackend.Models;
-using LmsBackend.Services;
+using ElearningBackend.Data;
+using ElearningBackend.DTOs;
+using ElearningBackend.Models;
+using ElearningBackend.Services;
 
-namespace LmsBackend.Services
+namespace ElearningBackend.Services
 {
     public class WishlistService : IWishlistService
     {

@@ -1,6 +1,6 @@
-using LmsBackend.Models;
+using ElearningBackend.Models;
 
-namespace LmsBackend.DTOs
+namespace ElearningBackend.DTOs
 {
     public class CourseDto
     {

@@ -2,10 +2,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using LmsBackend.Data;
-using LmsBackend.DTOs;
+using ElearningBackend.Data;
+using ElearningBackend.DTOs;
 
-namespace LmsBackend.Services
+namespace ElearningBackend.Services
 {
     public class PaymentService : IPaymentService
     {
